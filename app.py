@@ -13,6 +13,7 @@ app.config.suppress_callback_exceptions = True
 
 from pages import home, livetime
 
+livetime.register_callbacks(app) # Added to use data_fetch function in livetime.py 
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),

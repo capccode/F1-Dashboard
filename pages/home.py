@@ -84,7 +84,7 @@ driver_colors = {
 
 #//Layout
 layout = html.Div([
-    html.H1('Donation Link here'),
+    html.H1('Add Link here'),
     dcc.Link('Go to Livetime', href='/livetime',),
     html.Span('  |  ', className='mx-2'),
     dcc.Link('Go to Home', href='/',),
