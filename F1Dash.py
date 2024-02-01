@@ -187,11 +187,18 @@ driver_colors = {
 def update_lap_slider(year, gp, session):
     year = int(year)  # Convert year to int
     session_data = fastf1.get_session(year, gp, session)
-    laps_data = session_data.load_laps(with_telemetry=True)
+    session_data.load()  # new way to load the session data in fastf1 3.0.7
+    laps_data = session_data.laps  # Access laps directly
+
+    # Get the maximum lap number
     max_laps = int(laps_data['LapNumber'].max())  # Convert max_laps to int
+
+    # Set initial slider value and create marks
     value = 1
     marks = {i: f" {i}" for i in range(1, max_laps + 1)}
+
     return max_laps, value, marks
+
 
 # Callback to GP dictionary for dropdown
 @app.callback(
@@ -212,10 +219,12 @@ def update_gp_dropdown(year):
 def update_driver_dropdown(year, gp, session):
     year = int(year)
     session_data = fastf1.get_session(year, gp, session)
-    laps_data = session_data.load_laps(with_telemetry=True)
+    session_data.load()  # updated line to match the new version of fastf1 3.0.7
+    laps_data = session_data.laps  # changed line
     drivers = laps_data['Driver'].unique()
     driver_options = [{'label': driver, 'value': driver} for driver in drivers]
     return driver_options, driver_options
+
 
 # Define the callback
 @app.callback(Output('lap-graph', 'figure'),
@@ -228,8 +237,9 @@ def update_driver_dropdown(year, gp, session):
 def update_graph(year, gp, session, driver1, driver2, lap_number):
     try:
         year = int(year)  # Convert year to int
-        session = fastf1.get_session(year, gp, session)
-        laps = session.load_laps(with_telemetry=True)
+        session_data = fastf1.get_session(year, gp, session)
+        session_data.load()  # load the session data with updated fastf1 3.0.7
+        laps = session_data.laps  # aqccess laps directly
 
         print(f"Year: {year}, GP: {gp}, Session: {session}, Driver1: {driver1}, Driver2: {driver2}, LapNumber: {lap_number}")
 
@@ -299,8 +309,8 @@ def update_graph(year, gp, session, driver1, driver2, lap_number):
             print("DRS data not available")
 
         fig.update_layout(
-            height=1500, # Adjust the height as desired
-            width=1500, # Adjust the width as desired
+            height=1500, # Adjust the height
+            width=1500, # Adjust the width
         )
         
         
