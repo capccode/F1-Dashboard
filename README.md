@@ -1,12 +1,12 @@
 # F1-Dash
 Historical F1 Telemetry Data for F1
 
-This is a Python web application using Dash, a powerful framework for building web applications, and Fast-F1, a library for retrieving Formula 1 data. The dashboard visualizes telemetry data from historical Formula 1 races, allowing users to compare the performance of two drivers for a specific lap during a session. The data is presented using interactive graphs, which are updated based on user inputs.
+This is a Python web application using Dash, Plotly, Pandas, and Fast-F1, a library for retrieving Formula 1 data. The dashboard visualizes telemetry data from historical Formula 1 races, allowing users to compare the performance of two drivers for a specific lap during a session. The data is presented using interactive graphs, which are updated based on user inputs.
 
 # Features
 
-    Select race year, Grand Prix, session (FP1, FP2, FP3, Q, or R), and drivers to compare
-    View lap telemetry data for the selected drivers, including:
+- **Select race year, Grand Prix, session (FP1, FP2, FP3, Q, or R), and drivers to compare**:
+- **Lap Comparison**: View lap telemetry data for the selected drivers, including:
         Delta Time
         Speed (km/h)
         Throttle
@@ -14,7 +14,8 @@ This is a Python web application using Dash, a powerful framework for building w
         Gear
         RPM
         DRS
-    Interactively select a lap using a slider
+- **Interactive Lap Slider**: Navigate through lap data with an interactive slider that dynamically updates visualizations.
+- **Caching Mechanism**: Speeds up data retrieval by caching fetched telemetry data locally.
 
 # Dependencies
 
@@ -59,4 +60,4 @@ Contributions are welcome! Please feel free to submit a pull request or open an 
 
 # License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License.
