@@ -13,6 +13,7 @@ from fastf1 import get_event_schedule
 from datetime import datetime
 
 
+
 # Get working directory
 cwd = os.getcwd()
 
@@ -157,9 +158,9 @@ driver_colors = {
 )
 def update_session_dropdown(year, round_number):
     if year is None or round_number is None:
-        # If there is no year or a GP is not selected, this will return an empty options list
+        # Return an empty options list if there's no year or GP selected
         return []
-    
+
     try:
         year = int(year)
         round_number = int(round_number)
@@ -168,12 +169,18 @@ def update_session_dropdown(year, round_number):
         sessions = ['FP1', 'FP2', 'FP3', 'Q', 'R']
         session_options = [{'label': session, 'value': session} for session in sessions]
         return session_options
-    except ValueError:
-        print(f"Error converting inputs to int: year={year}, round_number={round_number}")
+    except ValueError as e:
+        print(f"Input conversion error: {e}")
+        return []
+    except KeyError as e:
+        # Handle cases where expected data keys are missing
+        print(f"Key error during data loading: {e}")
         return []
     except Exception as e:
-        print(f"Error loading session data: {e}")
+        # Handle any other exceptions that might occur
+        print(f"Unexpected error during session data loading: {e}")
         return []
+
 
 
 # Updated Lap Slider callback with error handling
@@ -244,35 +251,26 @@ def update_gp_dropdown_options(selected_year):
      Input('session-dropdown', 'value')]
 )
 def update_driver_dropdown(year, round_number, session):
-    # If there are no drivers or a driver is not selected, will return an empty options list
     empty_options = []
+
+    # Check for None values right at the start
+    if year is None or round_number is None or session is None:
+        return empty_options, empty_options
 
     try:
         year = int(year)
-    except ValueError as e:
-        print(f"Error converting year to int: {e}")
-        return empty_options, empty_options
-
-    # Attempt to convert round_number to int, handling both integers and potential string inputs
-    try:
         round_number = int(round_number)
-    except ValueError as e:
-        print(f"Error converting round_number to int: {e}")
-        return empty_options, empty_options
-
-    # Load session data using fastf1
-    try:
         session_data = fastf1.get_session(year, round_number, session)
-        session_data.load()  # Load the session data
+        session_data.load()
     except Exception as e:
         print(f"Error loading session data: {e}")
         return empty_options, empty_options
 
-    # Extracting and setting driver options
     try:
         if 'Driver' in session_data.laps.columns:
             drivers = session_data.laps['Driver'].unique()
             driver_options = [{'label': driver, 'value': driver} for driver in drivers]
+            return driver_options, driver_options
         else:
             print("Driver column not found in laps data.")
             return empty_options, empty_options
@@ -280,7 +278,6 @@ def update_driver_dropdown(year, round_number, session):
         print(f"Error processing laps data: {e}")
         return empty_options, empty_options
 
-    return driver_options, driver_options
 
 
 
