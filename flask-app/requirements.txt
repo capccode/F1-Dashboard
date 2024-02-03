@@ -1,0 +1,8 @@
+Flask
+Flask-Caching
+dash
+dash_bootstrap_components
+fastf1
+plotly
+pandas
+gunicorn

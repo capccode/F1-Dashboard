@@ -1,0 +1,5 @@
+dash
+fastf1
+plotly
+pandas
+dash_bootstrap_components
