@@ -4,12 +4,16 @@ import pandas as pd
 import plotly.graph_objs as go
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc
 from flask_caching import Cache
+from dash import dcc
 from dash.dependencies import Input, Output
 from plotly.subplots import make_subplots
 from dash import html
 from collections import defaultdict
+from fastf1 import get_event_schedule
+from datetime import datetime
+
+
 
 # Get working directory
 cwd = os.getcwd()
@@ -21,47 +25,16 @@ cache_dir = os.path.join(cwd, 'Cache')
 fastf1.Cache.enable_cache(cache_dir)
 
 # Define the app
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN]) #Change theme "darkmode"
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN], suppress_callback_exceptions=False)
 
+# Define cache
 cache = Cache(app.server, config={'CACHE_TYPE': 'filesystem', 'CACHE_DIR': cache_dir})
 
-
+# Define server
 server = app.server
 
-#GP Dictionary
-gp_data = {
-    2019: [
-        'australia', 'bahrain', 'china', 'azerbaijan', 'spain',
-        'monaco', 'canada', 'france', 'austria', 'britain',
-        'germany', 'hungary', 'belgium', 'italy', 'singapore',
-        'russia', 'japan', 'mexico', 'usa', 'brazil', 'abu_dhabi'
-    ],
-    2020: [
-        'austria', 'austria_2', 'hungary', 'britain', 'britain_2',
-        'spain', 'belgium', 'italy', 'italy_2', 'russia',
-        'germany', 'portugal', 'italy_3', 'turkey', 'bahrain',
-        'bahrain_2', 'abu_dhabi'
-    ],
-    2021: [
-        'bahrain', 'italy', 'portugal', 'spain', 'monaco',
-        'azerbaijan', 'france', 'austria', 'austria_2', 'britain',
-        'hungary', 'belgium', 'netherlands', 'italy_2', 'russia',
-        'turkey', 'usa', 'mexico', 'brazil', 'qatar', 'saudi_arabia', 'abu_dhabi'
-    ],
-    2022: [
-        'bahrain', 'saudi_arabia', 'australia', 'italy', 'miami',
-        'spain', 'monaco', 'azerbaijan', 'canada', 'britain',
-        'austria', 'france', 'hungary', 'belgium', 'netherlands',
-        'italy_2', 'russia', 'singapore', 'japan', 'usa',
-        'mexico', 'brazil', 'abu_dhabi'
-    ],
-    2023: [
-        'bahrain', 'saudi_arabia', 'australia'
-    ]
-}
-
-
-
+# Calculate the current year
+current_year = datetime.now().year
 
 # Define the layout
 app.layout = html.Div([
@@ -69,8 +42,8 @@ app.layout = html.Div([
     html.Div(
         dcc.Dropdown(
             id='year-dropdown',
-            options=[{'label': str(year), 'value': year} for year in range(2019, 2024)],  # Add more years if needed
-            value='2023', #set default drop down
+            options=[{'label': str(year), 'value': year} for year in range(2018, current_year + 1)],
+            value=current_year,  # Set the default value to the current year
             style={'width': '100%'}
         ),
         style={'width': '25%', 'margin': '0 auto'}
@@ -111,7 +84,7 @@ app.layout = html.Div([
             options=[
                 {'label': 'Verstappen', 'value': 'VER'},
                 {'label': 'Hamilton', 'value': 'HAM'},
-                # Add more drivers here
+                # Add more
             ],
             value='VER',
             style={'width': '100%'}
@@ -134,14 +107,18 @@ app.layout = html.Div([
         dcc.Slider(
             id='lap-slider',
             min=1,
-            max=10,  # Will be updated by the callback
+            max=10,
             step=1,
             value=1,
-            marks={i: f"Lap {i}" for i in range(1, 10)},  # Will be updated by the callback
+            marks={i: f"Lap {i}" for i in range(1, 10)}, 
         ),
-        style={'width': '50%', 'margin': '10px auto 0 auto'}  # Added 10px top margin
+        style={'width': '50%', 'margin': '10px auto 0 auto'} 
     ),
+    #  New div to display the currently selected lap
+    html.Div(id='current-lap-display', style={'margin-top': '20px', 'fontSize': '20px'}),
+
     dcc.Graph(id='lap-graph'),
+
 ],
 style={
     'display': 'flex',
@@ -150,7 +127,7 @@ style={
     'justify-content': 'center'
 })
 
-# Define a color mapping dictionary
+# Define a color mapping dictionary, will update this to dynamic color mappin in next commit
 driver_colors = {
     'HAM': 'teal',  # Mercedes
     'BOT': 'teal',  # Mercedes
@@ -176,84 +153,166 @@ driver_colors = {
     'GIO': 'pink',  # Alfa Romeo
     'SCH': 'magenta',  # Haas
     'MAZ': 'magenta',  # Haas
-    # Add more drivers here
+    # Add more
 }
 
 
+# Updated session dropdown callback
+@app.callback(
+    Output('session-dropdown', 'options'),
+    [Input('year-dropdown', 'value'),
+     Input('gp-dropdown', 'value')]
+)
+@cache.memoize(timeout=180)  # Cache for 3 minutes
+def update_session_dropdown(year, round_number):
+    if year is None or round_number is None:
+        # Return an empty options list if there's no year or GP selected
+        return []
+
+    try:
+        year = int(year)
+        round_number = int(round_number)
+        session_data = fastf1.get_session(year, round_number, 'R')
+        session_data.load()
+        sessions = ['FP1', 'FP2', 'FP3', 'Q', 'R']
+        session_options = [{'label': session, 'value': session} for session in sessions]
+        return session_options
+    except ValueError as e:
+        print(f"Input conversion error: {e}")
+        return []
+    except KeyError as e:
+        # Handle cases where expected data keys are missing
+        print(f"Key error during data loading: {e}")
+        return []
+    except Exception as e:
+        # Handle any other exceptions that might occur
+        print(f"Unexpected error during session data loading: {e}")
+        return []
 
 
-# Define a new callback function (slider)
+
+# Updated Lap Slider callback with error handling
 @app.callback(
     [Output('lap-slider', 'max'),
      Output('lap-slider', 'value'),
      Output('lap-slider', 'marks')],
     [Input('year-dropdown', 'value'),
      Input('gp-dropdown', 'value'),
-     Input('session-dropdown', 'value')])
+     Input('session-dropdown', 'value')]
+)
 @cache.memoize(timeout=180)  # Cache for 3 minutes
-def update_lap_slider(year, gp, session):
-    year = int(year)  # Convert year to int
-    session_data = fastf1.get_session(year, gp, session)
-    session_data.load()  # new way to load the session data in fastf1 3.0.7
-    laps_data = session_data.laps  # Access laps directly
+def update_lap_slider(year, round_number, session):
+    default_max = 1
+    default_marks = {1: "Lap 1"}
 
-    # Get the maximum lap number
-    max_laps = int(laps_data['LapNumber'].max())  # Convert max_laps to int
+    if not (year and round_number and session):
+        print("Missing input from dropdowns.")
+        return default_max, 1, default_marks
 
-    # Set initial slider value and create marks
-    value = 1
-    marks = {i: f" {i}" for i in range(1, max_laps + 1)}
+    try:
+        year = int(year)
+        round_number = int(round_number)
+        session_data = fastf1.get_session(year, round_number, session)
+        session_data.load()
+        max_laps = int(session_data.laps['LapNumber'].max())
+        # Update the marks dictionary to show every 5th lap and the last lap, can label last lap as 'Final Lap' or 'Lap {max_laps}'
+        marks = {1: 'Lap 1', max_laps: f'{max_laps}'}
+        marks.update({i: f"{i}" for i in range(2, max_laps) if i % 5 == 0 or i == max_laps})
 
-    return max_laps, value, marks
+    except Exception as e:  # Broad exception handling to catch any errors
+        print(f"Failed to update lap slider: {e}")
+        return default_max, 1, default_marks
 
+    return max_laps, 1, marks
 
-# Callback to GP dictionary for dropdown
+# Lap Slider Counter callback - NEW! -
+@app.callback(
+    Output('current-lap-display', 'children'),
+    [Input('lap-slider', 'value')]
+)
 @cache.memoize(timeout=180)  # Cache for 3 minutes
+def update_current_lap_display(selected_lap):
+    return f"Currently Selected: Lap {selected_lap}"
+
+# Updated callback for dynamic GP dictionary for dropdown
 @app.callback(
     Output('gp-dropdown', 'options'),
     [Input('year-dropdown', 'value')]
 )
-def update_gp_dropdown(year):
-    year = int(year)
-    return [{'label': gp.capitalize(), 'value': gp.lower()} for gp in gp_data[year]]
-
-# Callback to update driver dropdown
 @cache.memoize(timeout=180)  # Cache for 3 minutes
+def update_gp_dropdown_options(selected_year):
+    year = int(selected_year)  # Ensure year is an integer
+    schedule = fastf1.get_event_schedule(year=year, include_testing=False)
+
+    # Use 'EventName' or 'OfficialEventName' for dropdown labels and 'RoundNumber' for values
+    options = [
+        {'label': event['EventName'], 'value': event['RoundNumber']}
+        for _, event in schedule.iterrows()
+    ]
+
+    return options
+
+
+#Updated Driver dropdown callback with error handling
 @app.callback(
     [Output('driver1-dropdown', 'options'),
      Output('driver2-dropdown', 'options')],
     [Input('year-dropdown', 'value'),
      Input('gp-dropdown', 'value'),
-     Input('session-dropdown', 'value')])
-def update_driver_dropdown(year, gp, session):
-    year = int(year)
-    session_data = fastf1.get_session(year, gp, session)
-    session_data.load()  # updated line to match the new version of fastf1 3.0.7
-    laps_data = session_data.laps  # changed line
-    drivers = laps_data['Driver'].unique()
-    driver_options = [{'label': driver, 'value': driver} for driver in drivers]
-    return driver_options, driver_options
-
-
-# Define the callback
+     Input('session-dropdown', 'value')]
+)
 @cache.memoize(timeout=180)  # Cache for 3 minutes
+def update_driver_dropdown(year, round_number, session):
+    empty_options = []
+
+    # Check for None values right at the start
+    if year is None or round_number is None or session is None:
+        return empty_options, empty_options
+
+    try:
+        year = int(year)
+        round_number = int(round_number)
+        session_data = fastf1.get_session(year, round_number, session)
+        session_data.load()
+    except Exception as e:
+        print(f"Error loading session data: {e}")
+        return empty_options, empty_options
+
+    try:
+        if 'Driver' in session_data.laps.columns:
+            drivers = session_data.laps['Driver'].unique()
+            driver_options = [{'label': driver, 'value': driver} for driver in drivers]
+            return driver_options, driver_options
+        else:
+            print("Driver column not found in laps data.")
+            return empty_options, empty_options
+    except Exception as e:
+        print(f"Error processing laps data: {e}")
+        return empty_options, empty_options
+
+
+
+
+# Plotly graph callback
 @app.callback(Output('lap-graph', 'figure'),
               [Input('year-dropdown', 'value'),
                Input('gp-dropdown', 'value'),
                Input('session-dropdown', 'value'),
                Input('driver1-dropdown', 'value'),
                Input('driver2-dropdown', 'value'),
-               Input('lap-slider', 'value')])  # Add lap-slider as an input
+               Input('lap-slider', 'value')])
+@cache.memoize(timeout=180)  # Cache for 3 minutes
 def update_graph(year, gp, session, driver1, driver2, lap_number):
     try:
-        year = int(year)  # Convert year to int
+        year = int(year)
         session_data = fastf1.get_session(year, gp, session)
         session_data.load()  # load the session data with updated fastf1 3.0.7
-        laps = session_data.laps  # aqccess laps directly
+        laps = session_data.laps  # access laps directly
+    
 
         print(f"Year: {year}, GP: {gp}, Session: {session}, Driver1: {driver1}, Driver2: {driver2}, LapNumber: {lap_number}")
 
-        #Update callback function to get colors using driver codes
+        #Update callback function to get colors using driver codes - Will update next - 
         driver1_color = driver_colors.get(driver1, 'red')  # default to red if not found in the dictionary
         driver2_color = driver_colors.get(driver2, 'blue')  # default to blue if not found in the dictionary
 
@@ -333,6 +392,11 @@ def update_graph(year, gp, session, driver1, driver2, lap_number):
 
 
 
+
+
 if __name__ == '__main__':
     # app.run_server(debug=True)
+    
+    # Runs entire app
     app.run(threaded=True, host='0.0.0.0', port=int(os.getenv('APP_PORT')))
+
