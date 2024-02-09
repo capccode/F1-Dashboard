@@ -163,7 +163,7 @@ driver_colors = {
     [Input('year-dropdown', 'value'),
      Input('gp-dropdown', 'value')]
 )
-@cache.memoize(timeout=180)  # Cache for 3 minutes
+@cache.memoize(timeout=43200)  # Cache for 12 hours
 def update_session_dropdown(year, round_number):
     if year is None or round_number is None:
         # Return an empty options list if there's no year or GP selected
@@ -200,7 +200,7 @@ def update_session_dropdown(year, round_number):
      Input('gp-dropdown', 'value'),
      Input('session-dropdown', 'value')]
 )
-@cache.memoize(timeout=180)  # Cache for 3 minutes
+@cache.memoize(timeout=43200)  # Cache for 12 hours
 def update_lap_slider(year, round_number, session):
     default_max = 1
     default_marks = {1: "Lap 1"}
@@ -230,7 +230,7 @@ def update_lap_slider(year, round_number, session):
     Output('current-lap-display', 'children'),
     [Input('lap-slider', 'value')]
 )
-@cache.memoize(timeout=180)  # Cache for 3 minutes
+@cache.memoize(timeout=43200)  # Cache for 12 hours
 def update_current_lap_display(selected_lap):
     return f"Currently Selected: Lap {selected_lap}"
 
@@ -239,7 +239,7 @@ def update_current_lap_display(selected_lap):
     Output('gp-dropdown', 'options'),
     [Input('year-dropdown', 'value')]
 )
-@cache.memoize(timeout=180)  # Cache for 3 minutes
+@cache.memoize(timeout=43200)  # Cache for 12 hours
 def update_gp_dropdown_options(selected_year):
     year = int(selected_year)  # Ensure year is an integer
     schedule = fastf1.get_event_schedule(year=year, include_testing=False)
@@ -261,7 +261,7 @@ def update_gp_dropdown_options(selected_year):
      Input('gp-dropdown', 'value'),
      Input('session-dropdown', 'value')]
 )
-@cache.memoize(timeout=180)  # Cache for 3 minutes
+@cache.memoize(timeout=43200)  # Cache for 12 hours
 def update_driver_dropdown(year, round_number, session):
     empty_options = []
 
@@ -301,7 +301,7 @@ def update_driver_dropdown(year, round_number, session):
                Input('driver1-dropdown', 'value'),
                Input('driver2-dropdown', 'value'),
                Input('lap-slider', 'value')])
-@cache.memoize(timeout=180)  # Cache for 3 minutes
+@cache.memoize(timeout=43200)  # Cache for 12 hours
 def update_graph(year, gp, session, driver1, driver2, lap_number):
     try:
         year = int(year)

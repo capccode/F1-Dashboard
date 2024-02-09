@@ -6,7 +6,7 @@ resource "aws_ecs_task_definition" "task_definition" {
   requires_compatibilities = [
     "FARGATE"]
   network_mode = "awsvpc"
-  cpu = 1024
-  memory = 2048
+  cpu = 512
+  memory = 1024
   container_definitions = data.template_file.task_definition_template.rendered
 }

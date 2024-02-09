@@ -1,11 +1,11 @@
 data "aws_route53_zone" "primary" {
-    name         = "lookmanolowo.com"
+    name         = "coal10.com"
     private_zone = false
 }
 
 resource "aws_route53_record" "formula_1" {
   zone_id = data.aws_route53_zone.primary.zone_id
-  name    = "f1.lookmanolowo.com"
+  name    = "f1dash.coal10.com"
   type    = "A"
   alias {
     name = aws_alb.alb.dns_name

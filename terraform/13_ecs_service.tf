@@ -1,9 +1,9 @@
 resource "aws_ecs_service" "flask-service" {
-  name = "flask-app-service"
+  name = "f1dash-app-service"
   cluster = aws_ecs_cluster.fp-ecs-cluster.id
   task_definition = aws_ecs_task_definition.task_definition.arn
-  desired_count = 2
-  deployment_minimum_healthy_percent = 50
+  desired_count = 1
+  deployment_minimum_healthy_percent = 100
   deployment_maximum_percent = 200
   launch_type = "FARGATE"
   scheduling_strategy = "REPLICA"

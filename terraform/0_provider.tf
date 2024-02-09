@@ -3,6 +3,7 @@ provider "aws" {
   # access_key = var.access_key
   # secret_key = var.secret_key
   region = var.region
+  profile = "coltons-account"
 }
 
 # random string for flask secret-key env variable
