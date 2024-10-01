@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "@chakra-ui/react": "^2.9.1",
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "axios": "^1.7.7",
+    "framer-motion": "^11.9.0",
+    "lucide-react": "^0.446.0",
+    "recharts": "^2.12.7"
+  }
+}
